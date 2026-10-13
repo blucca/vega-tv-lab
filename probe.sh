@@ -12,7 +12,7 @@ trap 'jobs -pr | xargs -r kill' EXIT
 date -Is
 curl -fsSL --max-time 90 https://sdk-installer.vega.labcollab.net/get_vvm.sh -o "$TMPDIR/get_vvm.sh"
 bash "$TMPDIR/get_vvm.sh"
-export PATH="$HOME/vega/bin:$PATH"
+source "$HOME/vega/env"
 vega --version
 vega project list-templates
 vega project generate --template helloWorld --name VegaRuntime --packageId io.github.blucca.vegart --outputDir "$ROOT/temp/app"
