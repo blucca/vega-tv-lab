@@ -36,13 +36,26 @@ test -n "$APP"
 
 Xvfb "$DISPLAY" -screen 0 1600x1000x24 -ac > "$OUT/xvfb.log" 2>&1 &
 sleep 2
+openbox > "$OUT/openbox.log" 2>&1 &
+sleep 2
 vega virtual-device start --no-gl-accel --display-res=1280,720 --timeout 300 > "$OUT/device.log" 2>&1
 vega device list
 xdotool search --onlyvisible --name '.*' getwindowname > "$OUT/boot-windows.txt" || true
 ffmpeg -y -f x11grab -video_size 1600x1000 -i "$DISPLAY" -frames:v 1 -update 1 "$OUT/device-ready.png"
 # The official emulator opens a nested-virtualization information dialog on this runner.
-xdotool mousemove 510 185 click 1
-sleep 20
+xdotool getactivewindow getwindowname > "$OUT/first-window.txt"
+xdotool key --clearmodifiers Return
+sleep 60
+timeout 180 vega exec vda -s emulator-5554 wait-for-device
+ready=false
+for attempt in {1..12}; do
+  if vega device running-apps -d VirtualDevice > "$OUT/running-apps.txt" 2>&1; then
+    ready=true
+    break
+  fi
+  sleep 5
+done
+test "$ready" = true
 ffmpeg -y -f x11grab -video_size 1600x1000 -i "$DISPLAY" -frames:v 1 -update 1 "$OUT/device-home.png"
 vega device install-app -p "$APP" -d VirtualDevice
 sleep 5
@@ -50,7 +63,7 @@ timeout 90 vega exec vda -s emulator-5554 wait-for-device
 vega device launch-app --appName io.github.blucca.vegart.main -d VirtualDevice
 sleep 5
 xdotool search --onlyvisible --name '.*' getwindowname > "$OUT/windows.txt" || true
-WINDOW="$(xdotool search --onlyvisible --name 'Vega|Virtual|Device' | head -1)"
+WINDOW="$(xdotool getactivewindow)"
 xdotool windowfocus --sync "$WINDOW"
 ffmpeg -y -f x11grab -video_size 1600x1000 -i "$DISPLAY" -frames:v 1 -update 1 "$OUT/before.png"
 ffmpeg -y -f x11grab -video_size 1600x1000 -framerate 15 -i "$DISPLAY" -t 20 -c:v libx264 -preset ultrafast -crf 26 -pix_fmt yuv420p "$OUT/remote.mp4" > "$OUT/recording.log" 2>&1 &
