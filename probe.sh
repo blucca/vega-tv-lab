@@ -7,7 +7,15 @@ export DISPLAY=:99
 OUT="$ROOT/temp/evidence"
 mkdir -p "$HOME" "$TMPDIR" "$OUT"
 exec > >(tee "$OUT/probe.log") 2>&1
-trap 'jobs -pr | xargs -r kill' EXIT
+cleanup() {
+  status=$?
+  if [ -n "${KEPLER_SDK_PATH:-}" ] && [ -d "$KEPLER_SDK_PATH/logs" ]; then
+    cp -r "$KEPLER_SDK_PATH/logs" "$OUT/sdk-logs"
+  fi
+  jobs -pr | xargs -r kill || true
+  exit "$status"
+}
+trap cleanup EXIT
 
 date -Is
 curl -fsSL --max-time 90 https://sdk-installer.vega.labcollab.net/get_vvm.sh -o "$TMPDIR/get_vvm.sh"
@@ -21,6 +29,7 @@ cat package.json
 vega project update-manifest --os-min 1.2 --os-version 1.2
 npm install --no-audit --no-fund
 npm run build:app
+cp package.json manifest.toml "$OUT/"
 find build -name '*.vpkg' -print
 APP="$(find build -path '*x86_64-release*' -name '*.vpkg' -print -quit)"
 test -n "$APP"
@@ -28,10 +37,20 @@ test -n "$APP"
 Xvfb "$DISPLAY" -screen 0 1600x1000x24 -ac > "$OUT/xvfb.log" 2>&1 &
 sleep 2
 vega virtual-device start --no-gl-accel --display-res=1280,720 --timeout 300 > "$OUT/device.log" 2>&1
-vega device list || true
-vega run-app "$APP" io.github.blucca.vegart.main -d VirtualDevice
+vega device list
+ffmpeg -y -f x11grab -video_size 1600x1000 -i "$DISPLAY" -frames:v 1 "$OUT/device-ready.png"
+vega exec vda -s emulator-5554 shell vsm developer-mode enable || true
+sleep 15
+timeout 90 vega exec vda -s emulator-5554 wait-for-device
+vega exec vda -s emulator-5554 shell vsm developer-mode status || true
+vega device install-app "$APP" -d VirtualDevice
+sleep 5
+timeout 90 vega exec vda -s emulator-5554 wait-for-device
+vega device launch-app io.github.blucca.vegart.main -d VirtualDevice
 sleep 5
 xdotool search --onlyvisible --name '.*' getwindowname > "$OUT/windows.txt" || true
+WINDOW="$(xdotool search --onlyvisible --name 'Vega|Virtual|Device' | head -1)"
+xdotool windowfocus --sync "$WINDOW"
 ffmpeg -y -f x11grab -video_size 1600x1000 -i "$DISPLAY" -frames:v 1 "$OUT/before.png"
 ffmpeg -y -f x11grab -video_size 1600x1000 -framerate 15 -i "$DISPLAY" -t 20 -c:v libx264 -preset ultrafast -crf 26 -pix_fmt yuv420p "$OUT/remote.mp4" > "$OUT/recording.log" 2>&1 &
 RECORDER=$!
