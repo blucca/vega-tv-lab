@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT="$PWD"
 export HOME="$ROOT/temp/home" TMPDIR="$ROOT/temp/tmp"
-export NONINTERACTIVE=true VEGA_SDK_VERSION=0.24.9311 SKIP_VVD_INSTALL=false
+export NONINTERACTIVE=true VEGA_SDK_VERSION=0.24.12112 SKIP_VVD_INSTALL=false
 export DISPLAY=:99
 OUT="$ROOT/temp/evidence"
 mkdir -p "$HOME" "$TMPDIR" "$OUT"

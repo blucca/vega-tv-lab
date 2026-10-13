@@ -8,7 +8,9 @@ The manual workflow installs the official SDK, builds its Hello World template, 
 
 ## Run
 
-Open **Actions → Official Vega runtime → Run workflow**. The job uses an Ubuntu runner with KVM and a software-rendered X display. SDK installation and generated sample files stay in `temp/`; artifacts contain logs and screen recordings.
+Open **Actions → Official Vega runtime → Run workflow**. The job uses an Ubuntu runner with KVM and a software-rendered X display. SDK `0.24.12112` installation and generated sample files stay in `temp/`; artifacts contain logs and screen recordings.
+
+Choose a published SDK version with `vega sdk list-remote`. The CI documentation example `0.24.9311` returned “Version not found” on October 14, 2026; the registry listed `0.24.12112` as the latest release.
 
 - [Official SDK installation](https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html)
 - [Official CI installation](https://developer.amazon.com/docs/vega/0.24/continuous-integration.html)
